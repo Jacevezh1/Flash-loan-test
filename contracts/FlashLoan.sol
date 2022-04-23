@@ -1,5 +1,5 @@
-//SPDX-License-Identifier: Unlicense
-pragma solidity ^0.8.0;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.4;
 
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
@@ -17,20 +17,30 @@ contract FlashLoan is FlashLoanSimpleReceiverBase {
     function createFlashLoan(address asset, uint amount) external {
         address receiver = address(this);
         bytes memory params = ""; // Use this to pass arbitrary data to executeOperation
-        uint referalCode = 0; // It's zero because this transaction was executed by user without middleman
+        uint16 referralCode = 0; // It's zero because this transaction was executed by user without middleman
 
         // Calll method of the pool contract, which is initialized in FlashLoanSimpleReceiverBase
-        POOL.flashLoanSimple(receiverAddress, asset, amount, params, referralCode);
+        POOL.flashLoanSimple(
+            receiver,
+            asset,
+            amount,
+            params,
+            referralCode
+        );
     }
 
-    // After the pool transfer the funds, it calls this function to execute logic
-    function executeOperation(asset, amount, premium, initiator, params) external returns(bool) {
-        // do things like arbitrage here
+    function executeOperation(
+        address asset,
+        uint256 amount,
+        uint256 premium,
+        address initiator,
+        bytes calldata params
+    ) external returns (bool){
+        // do things like arbitrage, liquidation, etc
         // abi.decode(params) to decode params
-
-        uint amountOwning = amount.add(premium);
-        IERC20(asset).approve(addreess(pool), amountOwning); // Approve to the pool contract to withdraw amount with premuim
-        emit Log(asset, amountOwning);
+        uint amountOwing = amount.add(premium);
+        IERC20(asset).approve(address(POOL), amountOwing);
+        emit Log(asset, amountOwing);
         return true;
     }
 }
